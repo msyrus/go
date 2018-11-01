@@ -22,7 +22,7 @@ func ManageServer(srvr *http.Server, gracePeriod time.Duration) error {
 		errCh <- srvr.ListenAndServe()
 	}()
 
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM)
+	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGTERM, os.Interrupt)
 
 	for i := 0; i < 2; i++ {
 		select {
