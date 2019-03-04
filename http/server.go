@@ -54,3 +54,32 @@ func ManageServer(srvr *http.Server, gracePeriod time.Duration) error {
 	}
 	return nil
 }
+
+// HandleSignals listen on the registered signals and fires the gracefulHandler for the
+// first signal and the forceHandler (if any) for the next this function blocks and
+// return any error that returned by any of the handlers first
+func HandleSignals(sigs []os.Signal, gracefulHandler, forceHandler func() error) error {
+	sigCh := make(chan os.Signal)
+	errCh := make(chan error, 1)
+
+	signal.Notify(sigCh, sigs...)
+	defer signal.Stop(sigCh)
+
+	grace := true
+	for {
+		select {
+		case err := <-errCh:
+			return err
+		case <-sigCh:
+			if grace {
+				grace = false
+				go func() {
+					errCh <- gracefulHandler()
+				}()
+			} else if forceHandler != nil {
+				err := forceHandler()
+				errCh <- err
+			}
+		}
+	}
+}
